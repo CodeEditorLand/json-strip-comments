@@ -1,8 +1,8 @@
 use serde_json::Value;
 
 fn main() {
-    let mut data = String::from(
-        r#"
+	let mut data = String::from(
+		r#"
      {
          "name": /* full */ "John Doe",
          "age": 43,
@@ -11,10 +11,10 @@ fn main() {
              "+44 2345678", // home phone
          ] /** comment **/
      }"#,
-    );
+	);
 
-    json_strip_comments::strip(&mut data).unwrap();
-    let value: Value = serde_json::from_str(&data).unwrap();
+	json_strip_comments::strip(&mut data).unwrap();
+	let value: Value = serde_json::from_str(&data).unwrap();
 
-    println!("{value}");
+	println!("{value}");
 }

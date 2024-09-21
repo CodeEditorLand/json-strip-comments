@@ -8,7 +8,7 @@ readme = "README.md"
 repository = "https://github.com/oxc-project/json-strip-comments"
 
 [[bench]]
-name    = "strip"
+name = "strip"
 harness = false
 
 [dev-dependencies]
