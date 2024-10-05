@@ -1,12 +1,12 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
 pub fn bench(c: &mut Criterion) {
-    c.bench_function("tsconfig", |b| {
-        b.iter(|| {
-            let mut data = String::from(TSCONFIG);
-            json_strip_comments::strip(&mut data).unwrap();
-        });
-    });
+	c.bench_function("tsconfig", |b| {
+		b.iter(|| {
+			let mut data = String::from(TSCONFIG);
+			json_strip_comments::strip(&mut data).unwrap();
+		});
+	});
 }
 
 criterion_group!(strip, bench);
