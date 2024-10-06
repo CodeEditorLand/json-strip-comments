@@ -14,7 +14,7 @@ fn main() {
 	);
 
 	json_strip_comments::strip(&mut data).unwrap();
-	let value: Value = serde_json::from_str(&data).unwrap();
+	let value:Value = serde_json::from_str(&data).unwrap();
 
 	println!("{value}");
 }

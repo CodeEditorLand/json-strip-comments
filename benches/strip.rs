@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
-pub fn bench(c: &mut Criterion) {
+pub fn bench(c:&mut Criterion) {
 	c.bench_function("tsconfig", |b| {
 		b.iter(|| {
 			let mut data = String::from(TSCONFIG);
@@ -12,7 +12,7 @@ pub fn bench(c: &mut Criterion) {
 criterion_group!(strip, bench);
 criterion_main!(strip);
 
-const TSCONFIG: &str = r#"
+const TSCONFIG:&str = r#"
 {
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
