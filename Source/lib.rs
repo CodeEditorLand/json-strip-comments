@@ -116,11 +116,13 @@ where
 {
 	fn read(&mut self, buf:&mut [u8]) -> Result<usize> {
 		let count = self.inner.read(buf)?;
+
 		if count > 0 {
 			strip_buf(&mut self.state, &mut buf[..count], self.settings, false)?;
 		} else if self.state != Top && self.state != InLineComment {
 			invalid_data!();
 		}
+
 		Ok(count)
 	}
 }
@@ -132,15 +134,19 @@ fn consume_comment_whitespace_until_maybe_bracket(
 	settings:CommentSettings,
 ) -> Result<bool> {
 	*i += 1;
+
 	while *i < buf.len() {
 		let c = &mut buf[*i];
 		*state = match state {
 			Top => {
 				*state = top(c, settings);
+
 				if c.is_ascii_whitespace() {
 					*i += 1;
+
 					continue;
 				}
+
 				return Ok(*c == b'}' || *c == b']');
 			},
 			InString => in_string(*c),
@@ -152,6 +158,7 @@ fn consume_comment_whitespace_until_maybe_bracket(
 		};
 		*i += 1;
 	}
+
 	Ok(false)
 }
 
@@ -162,12 +169,16 @@ fn strip_buf(
 	remove_trailing_commas:bool,
 ) -> Result<()> {
 	let mut i = 0;
+
 	let len = buf.len();
+
 	while i < len {
 		let c = &mut buf[i];
+
 		if matches!(state, Top) {
 			let cur = i;
 			*state = top(c, settings);
+
 			if remove_trailing_commas
 				&& *c == b','
 				&& consume_comment_whitespace_until_maybe_bracket(state, buf, &mut i, settings)?
@@ -185,23 +196,30 @@ fn strip_buf(
 				InLineComment => consume_line_comments(buf, &mut i),
 			}
 		}
+
 		i += 1;
 	}
+
 	Ok(())
 }
 
 #[inline]
 fn consume_line_comments(buf:&mut [u8], i:&mut usize) -> State {
 	let cur = *i;
+
 	match memchr::memchr(b'\n', &buf[*i..]) {
 		Some(offset) => {
 			*i += offset;
+
 			buf[cur..*i].fill(b' ');
+
 			Top
 		},
 		None => {
 			*i = buf.len() - 1;
+
 			buf[cur..].fill(b' ');
+
 			InLineComment
 		},
 	}
@@ -210,15 +228,20 @@ fn consume_line_comments(buf:&mut [u8], i:&mut usize) -> State {
 #[inline]
 fn consume_block_comments(buf:&mut [u8], i:&mut usize) -> State {
 	let cur = *i;
+
 	match memchr::memchr(b'*', &buf[*i..]) {
 		Some(offset) => {
 			*i += offset;
+
 			buf[cur..=*i].fill(b' ');
+
 			MaybeCommentEnd
 		},
 		None => {
 			*i = buf.len() - 1;
+
 			buf[cur..].fill(b' ');
+
 			InBlockComment
 		},
 	}
@@ -362,10 +385,12 @@ fn top(c:&mut u8, settings:CommentSettings) -> State {
 		b'"' => InString,
 		b'/' => {
 			*c = b' ';
+
 			InComment
 		},
 		b'#' if settings.hash_line_comments => {
 			*c = b' ';
+
 			InLineComment
 		},
 		_ => Top,
@@ -390,12 +415,14 @@ fn in_comment(c:&mut u8, settings:CommentSettings) -> Result<State> {
 		},
 	};
 	*c = b' ';
+
 	Ok(new_state)
 }
 
 fn maybe_comment_end(c:&mut u8) -> State {
 	let old = *c;
 	*c = b' ';
+
 	match old {
 		b'/' => Top,
 		b'*' => MaybeCommentEnd,
@@ -411,22 +438,29 @@ mod tests {
 
 	fn strip_string(input:&str) -> String {
 		let mut out = String::new();
+
 		let count = StripComments::new(input.as_bytes()).read_to_string(&mut out).unwrap();
+
 		assert_eq!(count, input.len());
+
 		out
 	}
 
 	#[test]
 	fn block_comments() {
 		let json = r#"{/* Comment */"hi": /** abc */ "bye"}"#;
+
 		let stripped = strip_string(json);
+
 		assert_eq!(stripped, r#"{             "hi":            "bye"}"#);
 	}
 
 	#[test]
 	fn block_comments_with_possible_end() {
 		let json = r#"{/* Comment*PossibleEnd */"hi": /** abc */ "bye"}"#;
+
 		let stripped = strip_string(json);
+
 		assert_eq!(stripped, r#"{                         "hi":            "bye"}"#);
 	}
 
@@ -435,7 +469,9 @@ mod tests {
 	#[test]
 	fn doc_comment() {
 		let json = r##"/** C **/ { "foo": 123 }"##;
+
 		let stripped = strip_string(json);
+
 		assert_eq!(stripped, r##"          { "foo": 123 }"##);
 	}
 
@@ -457,27 +493,33 @@ mod tests {
 	#[test]
 	fn incomplete_string() {
 		let json = r#""foo"#;
+
 		let mut stripped = String::new();
 
 		let err = StripComments::new(json.as_bytes()).read_to_string(&mut stripped).unwrap_err();
+
 		assert_eq!(err.kind(), ErrorKind::InvalidData);
 	}
 
 	#[test]
 	fn incomplete_comment() {
 		let json = "/* foo ";
+
 		let mut stripped = String::new();
 
 		let err = StripComments::new(json.as_bytes()).read_to_string(&mut stripped).unwrap_err();
+
 		assert_eq!(err.kind(), ErrorKind::InvalidData);
 	}
 
 	#[test]
 	fn incomplete_comment2() {
 		let json = "/* foo *";
+
 		let mut stripped = String::new();
 
 		let err = StripComments::new(json.as_bytes()).read_to_string(&mut stripped).unwrap_err();
+
 		assert_eq!(err.kind(), ErrorKind::InvalidData);
 	}
 
@@ -485,11 +527,14 @@ mod tests {
 	fn no_hash_comments() {
 		let json = r#"# bad comment
         {"a": "b"}"#;
+
 		let mut stripped = String::new();
+
 		CommentSettings::c_style()
 			.strip_comments(json.as_bytes())
 			.read_to_string(&mut stripped)
 			.unwrap();
+
 		assert_eq!(stripped, json);
 	}
 
@@ -497,29 +542,37 @@ mod tests {
 	fn no_slash_line_comments() {
 		let json = r#"// bad comment
         {"a": "b"}"#;
+
 		let mut stripped = String::new();
+
 		let err = CommentSettings::hash_only()
 			.strip_comments(json.as_bytes())
 			.read_to_string(&mut stripped)
 			.unwrap_err();
+
 		assert_eq!(err.kind(), ErrorKind::InvalidData);
 	}
 
 	#[test]
 	fn no_block_comments() {
 		let json = r#"/* bad comment */ {"a": "b"}"#;
+
 		let mut stripped = String::new();
+
 		let err = CommentSettings::hash_only()
 			.strip_comments(json.as_bytes())
 			.read_to_string(&mut stripped)
 			.unwrap_err();
+
 		assert_eq!(err.kind(), ErrorKind::InvalidData);
 	}
 
 	#[test]
 	fn strip_in_place() {
 		let mut json = String::from(r#"{/* Comment */"hi": /** abc */ "bye"}"#);
+
 		strip_comments_in_place(&mut json, CommentSettings::default(), false).unwrap();
+
 		assert_eq!(json, r#"{             "hi":            "bye"}"#);
 	}
 
@@ -540,6 +593,7 @@ mod tests {
             # another
         }"#,
 		);
+
 		strip_comments_in_place(&mut json, CommentSettings::default(), true).unwrap();
 
 		let expected = r#"{
