@@ -251,7 +251,7 @@ fn consume_block_comments(buf:&mut [u8], i:&mut usize) -> State {
 ///
 /// /// ## Example
 /// ```
-/// use json_strip_comments::{strip_comments_in_place, CommentSettings};
+/// use json_strip_comments::{CommentSettings, strip_comments_in_place};
 ///
 /// let mut string = String::from(
 /// 	r#"{
